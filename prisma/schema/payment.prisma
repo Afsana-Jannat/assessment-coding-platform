@@ -1,0 +1,31 @@
+model Payment {
+  id String @id @default(uuid())
+
+  amount   Float
+  currency String @default("BDT")
+
+  status PaymentStatus @default(PENDING)
+
+  paymentMethod PaymentMethod?
+
+  transactionId String? @unique
+
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation with Recruiter
+  recruiterId String
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Relation with Assessment
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([recruiterId], name: "idx_payment_recruiterId")
+  @@index([assessmentId], name: "idx_payment_assessmentId")
+  @@index([status], name: "idx_payment_status")
+  @@index([transactionId], name: "idx_payment_transactionId")
+  @@map("payments")
+}

@@ -1,0 +1,36 @@
+model Question {
+  id String @id @default(uuid())
+
+  questionText String
+
+  type QuestionType
+
+  marks Int
+  order Int
+
+  difficulty DifficultyLevel @default(MEDIUM)
+
+  explanation     String?
+  referenceAnswer String?
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation with Assessment
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Relation with Options
+  options Option[]
+
+  answers Answer[]
+
+  @@index([assessmentId], name: "idx_question_assessmentId")
+  @@index([type], name: "idx_question_type")
+  @@index([difficulty], name: "idx_question_difficulty")
+  @@index([isDeleted], name: "idx_question_isDeleted")
+  @@map("questions")
+}

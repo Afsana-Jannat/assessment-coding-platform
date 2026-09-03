@@ -1,0 +1,30 @@
+model Attempt {
+  id String @id @default(uuid())
+
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  status AttemptStatus @default(IN_PROGRESS)
+
+  score      Int?
+  percentage Float?
+
+  // Relation with Candidate
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Relation with Assessment
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answers Answer[]
+
+  @@index([candidateId], name: "idx_attempt_candidateId")
+  @@index([assessmentId], name: "idx_attempt_assessmentId")
+  @@index([status], name: "idx_attempt_status")
+  @@index([startedAt], name: "idx_attempt_startedAt")
+  @@map("attempts")
+}

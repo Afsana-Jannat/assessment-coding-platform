@@ -1,0 +1,19 @@
+model Option {
+  id String @id @default(uuid())
+
+  optionText String
+  isCorrect  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation with Question
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  answers Answer[]
+
+  @@index([questionId], name: "idx_option_questionId")
+  @@index([isCorrect], name: "idx_option_isCorrect")
+  @@map("options")
+}

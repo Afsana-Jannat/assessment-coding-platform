@@ -1,0 +1,32 @@
+model Answer {
+  id String @id @default(uuid())
+
+  answerText String?
+
+  selectedOptionId String?
+
+  isCorrect     Boolean?
+  marksObtained Int?
+
+  answeredAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relation with Attempt
+  attemptId String
+  attempt   Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Relation with Question
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Selected MCQ Option
+  selectedOption Option? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  evaluation Evaluation?
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId], name: "idx_answer_attemptId")
+  @@index([questionId], name: "idx_answer_questionId")
+  @@index([selectedOptionId], name: "idx_answer_selectedOptionId")
+  @@map("answers")
+}

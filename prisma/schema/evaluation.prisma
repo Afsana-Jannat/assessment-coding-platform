@@ -1,0 +1,23 @@
+model Evaluation {
+  id String @id @default(uuid())
+
+  marksObtained Int
+  feedback      String?
+
+  evaluatedAt DateTime @default(now())
+
+  // Relation with Answer
+  answerId String @unique
+  answer   Answer @relation(fields: [answerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Relation with Recruiter
+  recruiterId String
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recruiterId], name: "idx_evaluation_recruiterId")
+  @@index([evaluatedAt], name: "idx_evaluation_evaluatedAt")
+  @@map("evaluations")
+}

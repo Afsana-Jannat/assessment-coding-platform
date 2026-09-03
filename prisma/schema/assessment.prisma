@@ -1,0 +1,40 @@
+model Assessment {
+  id String @id @default(uuid())
+
+  title        String
+  description  String?
+  instructions String?
+
+  durationMinutes Int
+  totalMarks      Int
+  passingMarks    Int
+
+  status AssessmentStatus @default(DRAFT)
+
+  startAt DateTime?
+  endAt   DateTime?
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation with Recruiter
+  recruiterId String
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Relation with Questions
+  questions Question[]
+
+  // Relation with Invitations
+  invitations Invitation[]
+  attempts    Attempt[]
+  payments    Payment[]
+
+  @@index([recruiterId], name: "idx_assessment_recruiterId")
+  @@index([status], name: "idx_assessment_status")
+  @@index([isDeleted], name: "idx_assessment_isDeleted")
+  @@index([startAt], name: "idx_assessment_startAt")
+  @@map("assessments")
+}
