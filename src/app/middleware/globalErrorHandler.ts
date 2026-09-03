@@ -1,65 +1,87 @@
 import type { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
+import { ZodError } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import config from "../config";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const globalErrorHandler = async (
-	err: any,
+export const globalErrorHandler = (
+	err: unknown,
 	_req: Request,
 	res: Response,
 	_next: NextFunction,
 ) => {
 	if (config.node_env === "development") {
-		console.log("Error from Global Error Handler", err);
+		console.error("Error from Global Error Handler:", err);
 	}
 
 	let statusCode: number = httpStatus.INTERNAL_SERVER_ERROR;
-	let errorMessage = err.message || "Internal Server Error";
-	const errorName = err.name || "Internal Server Error";
-	// let errorDetails = err.stack
+	let message = "Internal Server Error";
+	let errors: unknown[] = [];
 
-	if (err instanceof Prisma.PrismaClientValidationError) {
+	/*
+	 * Zod Validation Error
+	 */
+	if (err instanceof ZodError) {
 		statusCode = httpStatus.BAD_REQUEST;
-		errorMessage = "You have provided incorrect field type or missing fields";
+		message = "Validation failed";
+
+		errors = err.issues.map((issue) => ({
+			field: issue.path.join("."),
+			message: issue.message,
+		}));
+	} else if (err instanceof Prisma.PrismaClientValidationError) {
+		/*
+		 * Prisma Validation Error
+		 */
+		statusCode = httpStatus.BAD_REQUEST;
+		message = "Invalid data provided";
 	} else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+		/*
+		 * Prisma Known Request Error
+		 */
 		if (err.code === "P2002") {
-			(statusCode = httpStatus.BAD_REQUEST),
-				(errorMessage = "Duplicate Key Error");
+			statusCode = httpStatus.CONFLICT;
+			message = "A record with this value already exists";
 		} else if (err.code === "P2003") {
-			(statusCode = httpStatus.BAD_REQUEST),
-				(errorMessage = "Foreign key constraint failed");
+			statusCode = httpStatus.BAD_REQUEST;
+			message = "Foreign key constraint failed";
 		} else if (err.code === "P2025") {
-			(statusCode = httpStatus.BAD_REQUEST),
-				(errorMessage =
-					"An operation failed because it depends on one or more records that were required but not found.");
+			statusCode = httpStatus.NOT_FOUND;
+			message = "The requested record was not found";
 		}
 	} else if (err instanceof Prisma.PrismaClientInitializationError) {
+		/*
+		 * Prisma Initialization Error
+		 */
 		if (err.errorCode === "P1000") {
 			statusCode = httpStatus.UNAUTHORIZED;
-			errorMessage =
-				"Authentication failed against database server. Please Check Your Credentials";
+			message = "Database authentication failed";
 		} else if (err.errorCode === "P1001") {
-			statusCode = httpStatus.BAD_REQUEST;
-			errorMessage = "Can't reach database server";
+			statusCode = httpStatus.SERVICE_UNAVAILABLE;
+			message = "Database server is unreachable";
+		} else {
+			statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+			message = "Database initialization failed";
 		}
 	} else if (err instanceof Prisma.PrismaClientUnknownRequestError) {
+		/*
+		 * Prisma Unknown Request Error
+		 */
 		statusCode = httpStatus.INTERNAL_SERVER_ERROR;
-		errorMessage = "Error occurred during query execution";
+		message = "An error occurred during database operation";
 	} else if (err instanceof Error) {
-		errorMessage = err.message;
+		/*
+		 * Normal JavaScript Error
+		 */
+		message = err.message || "Internal Server Error";
 	}
 
-	res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+	/*
+	 * Final Response
+	 */
+	res.status(statusCode).json({
 		success: false,
-		statusCode: statusCode || httpStatus.INTERNAL_SERVER_ERROR,
-		name:
-			config.node_env === "development" ? errorName : "Internal Server Error",
-		message:
-			config.node_env === "development"
-				? errorMessage
-				: "Internal Server Error",
-		error: config.node_env === "development" ? err : undefined,
-		stack: config.node_env === "development" ? err.stack : undefined,
+		message,
+		errors,
 	});
 };
