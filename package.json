@@ -18,8 +18,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
+    "@prisma/adapter-pg": "7.9.1",
+    "@prisma/client": "7.9.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
@@ -44,7 +44,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.0",
-    "prisma": "^7.9.1",
+    "prisma": "7.9.1",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2"
   }
