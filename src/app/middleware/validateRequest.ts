@@ -1,14 +1,30 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError, type ZodType } from "zod";
 
+type ValidatedRequest = {
+	body?: unknown;
+	query?: unknown;
+	params?: unknown;
+};
+
+declare global {
+	namespace Express {
+		interface Request {
+			validated?: ValidatedRequest;
+		}
+	}
+}
+
 export const validateRequest = (schema: ZodType) => {
 	return (req: Request, res: Response, next: NextFunction) => {
 		try {
-			schema.parse({
+			const validatedData = schema.parse({
 				body: req.body,
 				query: req.query,
 				params: req.params,
-			});
+			}) as ValidatedRequest;
+
+			req.validated = validatedData;
 
 			next();
 		} catch (error) {

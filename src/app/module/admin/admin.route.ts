@@ -17,4 +17,18 @@ router.post(
 	AdminController.createRecruiter,
 );
 
+router.get(
+	"/recruiters",
+	auth(Role.ADMIN),
+	validateRequest(AdminValidation.getRecruiters),
+	AdminController.getRecruiters,
+);
+
+router.patch(
+	"/recruiters/:id/status",
+	auth(Role.ADMIN),
+	validateRequest(AdminValidation.updateRecruiterStatus),
+	AdminController.updateRecruiterStatus,
+);
+
 export const AdminRoutes = router;

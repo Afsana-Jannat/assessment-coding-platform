@@ -2,7 +2,12 @@ import type { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 import { Prisma } from "../../generated/prisma/client";
+
 import config from "../config";
+
+type AppError = Error & {
+	statusCode?: number;
+};
 
 export const globalErrorHandler = (
 	err: unknown,
@@ -18,27 +23,17 @@ export const globalErrorHandler = (
 	let message = "Internal Server Error";
 	let errors: unknown[] = [];
 
-	/*
-	 * Zod Validation Error
-	 */
 	if (err instanceof ZodError) {
 		statusCode = httpStatus.BAD_REQUEST;
 		message = "Validation failed";
-
 		errors = err.issues.map((issue) => ({
 			field: issue.path.join("."),
 			message: issue.message,
 		}));
 	} else if (err instanceof Prisma.PrismaClientValidationError) {
-		/*
-		 * Prisma Validation Error
-		 */
 		statusCode = httpStatus.BAD_REQUEST;
 		message = "Invalid data provided";
 	} else if (err instanceof Prisma.PrismaClientKnownRequestError) {
-		/*
-		 * Prisma Known Request Error
-		 */
 		if (err.code === "P2002") {
 			statusCode = httpStatus.CONFLICT;
 			message = "A record with this value already exists";
@@ -50,9 +45,6 @@ export const globalErrorHandler = (
 			message = "The requested record was not found";
 		}
 	} else if (err instanceof Prisma.PrismaClientInitializationError) {
-		/*
-		 * Prisma Initialization Error
-		 */
 		if (err.errorCode === "P1000") {
 			statusCode = httpStatus.UNAUTHORIZED;
 			message = "Database authentication failed";
@@ -64,21 +56,18 @@ export const globalErrorHandler = (
 			message = "Database initialization failed";
 		}
 	} else if (err instanceof Prisma.PrismaClientUnknownRequestError) {
-		/*
-		 * Prisma Unknown Request Error
-		 */
 		statusCode = httpStatus.INTERNAL_SERVER_ERROR;
 		message = "An error occurred during database operation";
 	} else if (err instanceof Error) {
-		/*
-		 * Normal JavaScript Error
-		 */
-		message = err.message || "Internal Server Error";
+		const appError = err as AppError;
+
+		if (appError.statusCode) {
+			statusCode = appError.statusCode;
+		}
+
+		message = appError.message || "Internal Server Error";
 	}
 
-	/*
-	 * Final Response
-	 */
 	res.status(statusCode).json({
 		success: false,
 		message,

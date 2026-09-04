@@ -24,6 +24,53 @@ const createRecruiter = z.object({
 	}),
 });
 
+const getRecruiters = z.object({
+	query: z.object({
+		page: z
+			.string()
+			.regex(/^\d+$/, "Page must be a positive number")
+			.transform(Number)
+			.refine((value) => value >= 1, {
+				message: "Page must be at least 1",
+			})
+			.optional()
+			.default(1),
+
+		limit: z
+			.string()
+			.regex(/^\d+$/, "Limit must be a positive number")
+			.transform(Number)
+			.refine((value) => value >= 1 && value <= 100, {
+				message: "Limit must be between 1 and 100",
+			})
+			.optional()
+			.default(10),
+
+		search: z.string().trim().min(1, "Search value cannot be empty").optional(),
+
+		sortBy: z
+			.enum(["name", "email", "companyName", "createdAt", "updatedAt"])
+			.optional()
+			.default("createdAt"),
+
+		sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+	}),
+});
+
+const updateRecruiterStatus = z.object({
+	params: z.object({
+		id: z.string().uuid("Invalid recruiter ID"),
+	}),
+
+	body: z.object({
+		status: z.enum(["ACTIVE", "BLOCKED"], {
+			message: "Status must be either ACTIVE or BLOCKED",
+		}),
+	}),
+});
+
 export const AdminValidation = {
 	createRecruiter,
+	getRecruiters,
+	updateRecruiterStatus,
 };
