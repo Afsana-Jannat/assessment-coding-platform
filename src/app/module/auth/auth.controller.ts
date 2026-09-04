@@ -1,164 +1,164 @@
-import type { Request, Response } from 'express';
-import httpStatus from 'http-status';
+import type { Request, Response } from "express";
+import httpStatus from "http-status";
 
-import { catchAsync } from '../../utils/catchAsync';
-import { sendResponse } from '../../utils/sendResponse';
-import type { IRequestUser } from './auth.interface';
-import { AuthService } from './auth.service';
+import { catchAsync } from "../../utils/catchAsync";
+import { sendResponse } from "../../utils/sendResponse";
+import type { IRequestUser } from "./auth.interface";
+import { AuthService } from "./auth.service";
 
 const registerCandidate = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.body;
+	const payload = req.body;
 
-  const result = await AuthService.registerCandidate(payload);
+	const result = await AuthService.registerCandidate(payload);
 
-  const { accessToken, refreshToken, user, candidate } = result;
+	const { accessToken, refreshToken, user, candidate } = result;
 
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24,
-  });
+	res.cookie("accessToken", accessToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24,
+	});
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  });
+	res.cookie("refreshToken", refreshToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24 * 7,
+	});
 
-  sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    success: true,
-    message: 'Candidate registered successfully',
-    data: {
-      accessToken,
-      refreshToken,
-      user,
-      candidate,
-    },
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.CREATED,
+		success: true,
+		message: "Candidate registered successfully",
+		data: {
+			accessToken,
+			refreshToken,
+			user,
+			candidate,
+		},
+	});
 });
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.body;
+	const payload = req.body;
 
-  const result = await AuthService.loginUser(payload);
+	const result = await AuthService.loginUser(payload);
 
-  const { accessToken, refreshToken } = result;
+	const { accessToken, refreshToken } = result;
 
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24,
-  });
+	res.cookie("accessToken", accessToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24,
+	});
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  });
+	res.cookie("refreshToken", refreshToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24 * 7,
+	});
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'User logged in successfully',
-    data: {
-      accessToken,
-      refreshToken,
-    },
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "User logged in successfully",
+		data: {
+			accessToken,
+			refreshToken,
+		},
+	});
 });
 
 const getMe = catchAsync(async (req: Request, res: Response) => {
-  const user = req.user as IRequestUser;
+	const user = req.user as IRequestUser;
 
-  if (!user) {
-    throw new Error('User information is missing in the request');
-  }
+	if (!user) {
+		throw new Error("User information is missing in the request");
+	}
 
-  const result = await AuthService.getMe(user);
+	const result = await AuthService.getMe(user);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'User profile fetched successfully',
-    data: result,
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "User profile fetched successfully",
+		data: result,
+	});
 });
 
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
-  if (!req.cookies.refreshToken) {
-    throw new Error('Refresh token is missing');
-  }
+	if (!req.cookies.refreshToken) {
+		throw new Error("Refresh token is missing");
+	}
 
-  const result = await AuthService.refreshToken(req.cookies.refreshToken);
+	const result = await AuthService.refreshToken(req.cookies.refreshToken);
 
-  const { accessToken, refreshToken: newRefreshToken } = result;
+	const { accessToken, refreshToken: newRefreshToken } = result;
 
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24,
-  });
+	res.cookie("accessToken", accessToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24,
+	});
 
-  res.cookie('refreshToken', newRefreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  });
+	res.cookie("refreshToken", newRefreshToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24 * 7,
+	});
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'New tokens generated successfully',
-    data: {
-      accessToken,
-      refreshToken: newRefreshToken,
-    },
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "New tokens generated successfully",
+		data: {
+			accessToken,
+			refreshToken: newRefreshToken,
+		},
+	});
 });
 
 const googleLogin = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.body;
+	const payload = req.body;
 
-  const result = await AuthService.googleLogin(payload);
+	const result = await AuthService.googleLogin(payload);
 
-  const { accessToken, refreshToken } = result;
+	const { accessToken, refreshToken } = result;
 
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24,
-  });
+	res.cookie("accessToken", accessToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24,
+	});
 
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'none',
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  });
+	res.cookie("refreshToken", refreshToken, {
+		httpOnly: true,
+		secure: false,
+		sameSite: "none",
+		maxAge: 1000 * 60 * 60 * 24 * 7,
+	});
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: 'Google login successful',
-    data: {
-      accessToken,
-      refreshToken,
-    },
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Google login successful",
+		data: {
+			accessToken,
+			refreshToken,
+		},
+	});
 });
 
 export const AuthController = {
-  registerCandidate,
-  loginUser,
-  getMe,
-  refreshToken,
-  googleLogin,
+	registerCandidate,
+	loginUser,
+	getMe,
+	refreshToken,
+	googleLogin,
 };
