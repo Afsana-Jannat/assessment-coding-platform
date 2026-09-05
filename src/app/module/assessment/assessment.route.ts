@@ -17,6 +17,34 @@ router.post(
   AssessmentController.createAssessment
 );
 
+router.get(
+  '/',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.getAssessmentsSchema),
+  AssessmentController.getAssessments
+);
+
+router.get(
+  '/:assessmentId',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.getAssessmentByIdSchema),
+  AssessmentController.getAssessmentById
+);
+
+router.patch(
+  '/:assessmentId',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.updateAssessmentSchema),
+  AssessmentController.updateAssessment
+);
+
+router.delete(
+  '/:assessmentId',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.deleteAssessmentSchema),
+  AssessmentController.deleteAssessment
+);
+
 router.post(
   '/:assessmentId/questions',
   auth(Role.RECRUITER),

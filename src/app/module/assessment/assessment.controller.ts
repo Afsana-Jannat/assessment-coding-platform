@@ -32,6 +32,126 @@ const createAssessment = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAssessments = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const query = req.validated?.query as {
+    status?: 'DRAFT' | 'PUBLISHED' | 'ONGOING' | 'COMPLETED' | 'ARCHIVED';
+    page: number;
+    limit: number;
+  };
+
+  const result = await AssessmentService.getAssessments({
+    recruiterUserId: req.user.userId,
+    filters: query,
+  });
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Assessments retrieved successfully',
+    data: result.assessments,
+    pagination: result.pagination,
+  });
+});
+
+const getAssessmentById = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const params = req.validated?.params as {
+    assessmentId: string;
+  };
+
+  const assessment = await AssessmentService.getAssessmentById({
+    recruiterUserId: req.user.userId,
+    assessmentId: params.assessmentId,
+  });
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Assessment retrieved successfully',
+    data: assessment,
+  });
+});
+
+const updateAssessment = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const params = req.validated?.params as {
+    assessmentId: string;
+  };
+
+  const data = req.validated?.body as {
+    title?: string;
+    description?: string | null;
+    instructions?: string | null;
+    durationMinutes?: number;
+    totalMarks?: number;
+    passingMarks?: number;
+    startAt?: Date | null;
+    endAt?: Date | null;
+  };
+
+  const assessment = await AssessmentService.updateAssessment({
+    recruiterUserId: req.user.userId,
+    assessmentId: params.assessmentId,
+    data,
+  });
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Assessment updated successfully',
+    data: assessment,
+  });
+});
+
+const deleteAssessment = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const params = req.validated?.params as {
+    assessmentId: string;
+  };
+
+  const assessment = await AssessmentService.deleteAssessment({
+    recruiterUserId: req.user.userId,
+    assessmentId: params.assessmentId,
+  });
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Assessment deleted successfully',
+    data: assessment,
+  });
+});
+
+const publishAssessment = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const params = req.validated?.params as {
+    assessmentId: string;
+  };
+
+  const assessment = await AssessmentService.publishAssessment({
+    recruiterUserId: req.user.userId,
+    assessmentId: params.assessmentId,
+  });
+
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Assessment published successfully',
+    data: assessment,
+  });
+});
+
 const createQuestion = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new Error('Authentication required');
@@ -184,6 +304,11 @@ const deleteQuestion = catchAsync(async (req: Request, res: Response) => {
 
 export const AssessmentController = {
   createAssessment,
+  getAssessments,
+  getAssessmentById,
+  updateAssessment,
+  deleteAssessment,
+  publishAssessment,
   createQuestion,
   getQuestions,
   getQuestionById,

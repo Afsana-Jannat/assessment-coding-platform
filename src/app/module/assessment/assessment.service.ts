@@ -794,12 +794,440 @@ const getAssessments = async ({
   };
 };
 
+type GetAssessmentByIdInput = {
+  recruiterUserId: string;
+  assessmentId: string;
+};
+
+const getAssessmentById = async ({
+  recruiterUserId,
+  assessmentId,
+}: GetAssessmentByIdInput) => {
+  const recruiter = await prisma.recruiter.findUnique({
+    where: {
+      userId: recruiterUserId,
+    },
+    select: {
+      id: true,
+      isDeleted: true,
+    },
+  });
+
+  if (!recruiter) {
+    const error = new Error('Recruiter not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (recruiter.isDeleted) {
+    const error = new Error('Recruiter has been deleted');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  const assessment = await prisma.assessment.findFirst({
+    where: {
+      id: assessmentId,
+      recruiterId: recruiter.id,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructions: true,
+      durationMinutes: true,
+      totalMarks: true,
+      passingMarks: true,
+      status: true,
+      startAt: true,
+      endAt: true,
+      isDeleted: true,
+      createdAt: true,
+      updatedAt: true,
+      recruiterId: true,
+      _count: {
+        select: {
+          questions: {
+            where: {
+              isDeleted: false,
+            },
+          },
+          invitations: true,
+          attempts: true,
+        },
+      },
+    },
+  });
+
+  if (!assessment) {
+    const error = new Error('Assessment not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  return assessment;
+};
+
+type UpdateAssessmentInput = {
+  recruiterUserId: string;
+  assessmentId: string;
+  data: {
+    title?: string;
+    description?: string | null;
+    instructions?: string | null;
+    durationMinutes?: number;
+    totalMarks?: number;
+    passingMarks?: number;
+    startAt?: Date | null;
+    endAt?: Date | null;
+  };
+};
+
+const updateAssessment = async ({
+  recruiterUserId,
+  assessmentId,
+  data,
+}: UpdateAssessmentInput) => {
+  const recruiter = await prisma.recruiter.findUnique({
+    where: {
+      userId: recruiterUserId,
+    },
+    select: {
+      id: true,
+      isDeleted: true,
+    },
+  });
+
+  if (!recruiter) {
+    const error = new Error('Recruiter not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (recruiter.isDeleted) {
+    const error = new Error('Recruiter has been deleted');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  const assessment = await prisma.assessment.findFirst({
+    where: {
+      id: assessmentId,
+      recruiterId: recruiter.id,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!assessment) {
+    const error = new Error('Assessment not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (assessment.status !== 'DRAFT') {
+    const error = new Error('Only draft assessments can be updated');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  if (
+    data.totalMarks !== undefined &&
+    data.passingMarks !== undefined &&
+    data.passingMarks > data.totalMarks
+  ) {
+    const error = new Error('Passing marks cannot exceed total marks');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  const currentAssessment = await prisma.assessment.findUnique({
+    where: {
+      id: assessmentId,
+    },
+    select: {
+      totalMarks: true,
+      passingMarks: true,
+      startAt: true,
+      endAt: true,
+    },
+  });
+
+  if (!currentAssessment) {
+    const error = new Error('Assessment not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  const finalTotalMarks = data.totalMarks ?? currentAssessment.totalMarks;
+
+  const finalPassingMarks = data.passingMarks ?? currentAssessment.passingMarks;
+
+  const finalStartAt =
+    data.startAt !== undefined ? data.startAt : currentAssessment.startAt;
+
+  const finalEndAt =
+    data.endAt !== undefined ? data.endAt : currentAssessment.endAt;
+
+  if (finalPassingMarks > finalTotalMarks) {
+    const error = new Error('Passing marks cannot exceed total marks');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  if (finalStartAt && finalEndAt && finalEndAt <= finalStartAt) {
+    const error = new Error('End time must be later than start time');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  const updatedAssessment = await prisma.assessment.update({
+    where: {
+      id: assessmentId,
+    },
+    data: {
+      title: data.title,
+      description: data.description,
+      instructions: data.instructions,
+      durationMinutes: data.durationMinutes,
+      totalMarks: data.totalMarks,
+      passingMarks: data.passingMarks,
+      startAt: data.startAt,
+      endAt: data.endAt,
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      instructions: true,
+      durationMinutes: true,
+      totalMarks: true,
+      passingMarks: true,
+      status: true,
+      startAt: true,
+      endAt: true,
+      isDeleted: true,
+      createdAt: true,
+      updatedAt: true,
+      recruiterId: true,
+    },
+  });
+
+  return updatedAssessment;
+};
+
+type DeleteAssessmentInput = {
+  recruiterUserId: string;
+  assessmentId: string;
+};
+
+const deleteAssessment = async ({
+  recruiterUserId,
+  assessmentId,
+}: DeleteAssessmentInput) => {
+  const recruiter = await prisma.recruiter.findUnique({
+    where: {
+      userId: recruiterUserId,
+    },
+    select: {
+      id: true,
+      isDeleted: true,
+    },
+  });
+
+  if (!recruiter) {
+    const error = new Error('Recruiter not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (recruiter.isDeleted) {
+    const error = new Error('Recruiter has been deleted');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  const assessment = await prisma.assessment.findFirst({
+    where: {
+      id: assessmentId,
+      recruiterId: recruiter.id,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+    },
+  });
+
+  if (!assessment) {
+    const error = new Error('Assessment not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (assessment.status !== 'DRAFT') {
+    const error = new Error('Only draft assessments can be deleted');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  const deletedAssessment = await prisma.assessment.update({
+    where: {
+      id: assessment.id,
+    },
+    data: {
+      isDeleted: true,
+      deletedAt: new Date(),
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      isDeleted: true,
+      deletedAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return deletedAssessment;
+};
+
+type PublishAssessmentInput = {
+  recruiterUserId: string;
+  assessmentId: string;
+};
+
+const publishAssessment = async ({
+  recruiterUserId,
+  assessmentId,
+}: PublishAssessmentInput) => {
+  const recruiter = await prisma.recruiter.findUnique({
+    where: {
+      userId: recruiterUserId,
+    },
+    select: {
+      id: true,
+      isDeleted: true,
+    },
+  });
+
+  if (!recruiter) {
+    const error = new Error('Recruiter not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (recruiter.isDeleted) {
+    const error = new Error('Recruiter has been deleted');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  const assessment = await prisma.assessment.findFirst({
+    where: {
+      id: assessmentId,
+      recruiterId: recruiter.id,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      status: true,
+      totalMarks: true,
+      passingMarks: true,
+      startAt: true,
+      endAt: true,
+      _count: {
+        select: {
+          questions: {
+            where: {
+              isDeleted: false,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!assessment) {
+    const error = new Error('Assessment not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (assessment.status !== 'DRAFT') {
+    const error = new Error('Only draft assessments can be published');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  if (assessment._count.questions === 0) {
+    const error = new Error(
+      'Assessment must contain at least one question before publishing'
+    );
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  if (assessment.passingMarks > assessment.totalMarks) {
+    const error = new Error('Passing marks cannot exceed total marks');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  if (!assessment.startAt || !assessment.endAt) {
+    const error = new Error(
+      'Start time and end time are required before publishing'
+    );
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  if (assessment.endAt <= assessment.startAt) {
+    const error = new Error('End time must be later than start time');
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  const publishedAssessment = await prisma.assessment.update({
+    where: {
+      id: assessment.id,
+    },
+    data: {
+      status: 'PUBLISHED',
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      durationMinutes: true,
+      totalMarks: true,
+      passingMarks: true,
+      status: true,
+      startAt: true,
+      endAt: true,
+      updatedAt: true,
+      recruiterId: true,
+    },
+  });
+
+  return publishedAssessment;
+};
+
 export const AssessmentService = {
   createAssessment,
+  getAssessments,
+  getAssessmentById,
+  updateAssessment,
   createQuestion,
   getQuestions,
   getQuestionById,
   updateQuestion,
   deleteQuestion,
-  getAssessments,
+  deleteAssessment,
+  publishAssessment,
 };

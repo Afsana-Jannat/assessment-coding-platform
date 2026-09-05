@@ -68,7 +68,7 @@ const createAssessmentSchema = z.object({
 const updateAssessmentSchema = z
   .object({
     params: z.object({
-      id: z.string().uuid('Invalid assessment ID'),
+      assessmentId: z.string().uuid('Invalid assessment ID'),
     }),
 
     body: z.object({
@@ -160,14 +160,26 @@ const getAssessmentsSchema = z.object({
 
 const getAssessmentByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid assessment ID'),
+    assessmentId: z.string().uuid('Invalid assessment ID'),
   }),
+
+  query: z.object({}),
 });
 
 const deleteAssessmentSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid assessment ID'),
+    assessmentId: z.string().uuid('Invalid assessment ID'),
   }),
+});
+
+const publishAssessmentSchema = z.object({
+  params: z.object({
+    assessmentId: z.string().uuid('Invalid assessment ID'),
+  }),
+
+  query: z.object({}),
+
+  body: z.object({}),
 });
 
 const createQuestionSchema = z
@@ -381,6 +393,7 @@ export const AssessmentValidation = {
   getAssessmentsSchema,
   getAssessmentByIdSchema,
   deleteAssessmentSchema,
+  publishAssessmentSchema,
   createQuestionSchema,
   getQuestionsSchema,
   getQuestionByIdSchema,
