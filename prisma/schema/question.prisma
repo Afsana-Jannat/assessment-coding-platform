@@ -28,6 +28,7 @@ model Question {
 
   answers Answer[]
 
+  @@unique([assessmentId, order])
   @@index([assessmentId], name: "idx_question_assessmentId")
   @@index([type], name: "idx_question_type")
   @@index([difficulty], name: "idx_question_difficulty")
