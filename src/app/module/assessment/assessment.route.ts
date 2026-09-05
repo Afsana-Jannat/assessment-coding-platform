@@ -17,4 +17,39 @@ router.post(
   AssessmentController.createAssessment
 );
 
+router.post(
+  '/:assessmentId/questions',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.createQuestionSchema),
+  AssessmentController.createQuestion
+);
+
+router.get(
+  '/:assessmentId/questions',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.getQuestionsSchema),
+  AssessmentController.getQuestions
+);
+
+router.get(
+  '/:assessmentId/questions/:questionId',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.getQuestionByIdSchema),
+  AssessmentController.getQuestionById
+);
+
+router.patch(
+  '/:assessmentId/questions/:questionId',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.updateQuestionSchema),
+  AssessmentController.updateQuestion
+);
+
+router.delete(
+  '/:assessmentId/questions/:questionId',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.deleteQuestionSchema),
+  AssessmentController.deleteQuestion
+);
+
 export const AssessmentRoutes = router;

@@ -170,10 +170,220 @@ const deleteAssessmentSchema = z.object({
   }),
 });
 
+const createQuestionSchema = z
+  .object({
+    params: z.object({
+      assessmentId: z.string().uuid('Invalid assessment ID'),
+    }),
+
+    body: z.object({
+      questionText: z
+        .string()
+        .trim()
+        .min(2, 'Question text must be at least 2 characters long')
+        .max(10000, 'Question text must not exceed 10000 characters'),
+
+      type: z.enum(['MCQ', 'WRITTEN', 'CODING']),
+
+      marks: z
+        .number()
+        .int('Marks must be a whole number')
+        .positive('Marks must be greater than 0'),
+
+      order: z
+        .number()
+        .int('Order must be a whole number')
+        .positive('Order must be greater than 0'),
+
+      difficulty: z
+        .enum(['EASY', 'MEDIUM', 'HARD'])
+        .optional()
+        .default('MEDIUM'),
+
+      explanation: z
+        .string()
+        .trim()
+        .max(5000, 'Explanation must not exceed 5000 characters')
+        .nullable()
+        .optional(),
+
+      referenceAnswer: z
+        .string()
+        .trim()
+        .max(10000, 'Reference answer must not exceed 10000 characters')
+        .nullable()
+        .optional(),
+
+      options: z
+        .array(
+          z.object({
+            optionText: z
+              .string()
+              .trim()
+              .min(1, 'Option text cannot be empty')
+              .max(1000, 'Option text must not exceed 1000 characters'),
+
+            isCorrect: z.boolean().default(false),
+          })
+        )
+        .optional(),
+    }),
+  })
+  .refine(
+    (data) => {
+      if (data.body.type !== 'MCQ') {
+        return true;
+      }
+
+      return (
+        data.body.options !== undefined &&
+        data.body.options.length >= 2 &&
+        data.body.options.some((option) => option.isCorrect)
+      );
+    },
+    {
+      message: 'MCQ must have at least 2 options and one correct option',
+      path: ['body', 'options'],
+    }
+  );
+
+const getQuestionsSchema = z.object({
+  params: z.object({
+    assessmentId: z.string().uuid('Invalid assessment ID'),
+  }),
+
+  query: z.object({
+    type: z.enum(['MCQ', 'WRITTEN', 'CODING']).optional(),
+
+    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
+
+    page: z
+      .string()
+      .regex(/^\d+$/, 'Page must be a positive number')
+      .transform(Number)
+      .refine((value) => value >= 1, {
+        message: 'Page must be at least 1',
+      })
+      .optional()
+      .default(1),
+
+    limit: z
+      .string()
+      .regex(/^\d+$/, 'Limit must be a positive number')
+      .transform(Number)
+      .refine((value) => value >= 1 && value <= 100, {
+        message: 'Limit must be between 1 and 100',
+      })
+      .optional()
+      .default(10),
+  }),
+});
+
+const getQuestionByIdSchema = z.object({
+  params: z.object({
+    assessmentId: z.string().uuid('Invalid assessment ID'),
+
+    questionId: z.string().uuid('Invalid question ID'),
+  }),
+
+  query: z.object({}),
+});
+
+const updateQuestionSchema = z
+  .object({
+    params: z.object({
+      assessmentId: z.string().uuid('Invalid assessment ID'),
+      questionId: z.string().uuid('Invalid question ID'),
+    }),
+
+    body: z.object({
+      questionText: z
+        .string()
+        .trim()
+        .min(2, 'Question text must be at least 2 characters long')
+        .max(10000, 'Question text must not exceed 10000 characters')
+        .optional(),
+
+      type: z.enum(['MCQ', 'WRITTEN', 'CODING']).optional(),
+
+      marks: z
+        .number()
+        .int('Marks must be a whole number')
+        .positive('Marks must be greater than 0')
+        .optional(),
+
+      order: z
+        .number()
+        .int('Order must be a whole number')
+        .positive('Order must be greater than 0')
+        .optional(),
+
+      difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
+
+      explanation: z
+        .string()
+        .trim()
+        .max(5000, 'Explanation must not exceed 5000 characters')
+        .nullable()
+        .optional(),
+
+      referenceAnswer: z
+        .string()
+        .trim()
+        .max(10000, 'Reference answer must not exceed 10000 characters')
+        .nullable()
+        .optional(),
+
+      options: z
+        .array(
+          z.object({
+            optionText: z
+              .string()
+              .trim()
+              .min(1, 'Option text cannot be empty')
+              .max(1000, 'Option text must not exceed 1000 characters'),
+
+            isCorrect: z.boolean().default(false),
+          })
+        )
+        .optional(),
+    }),
+  })
+  .refine(
+    (data) => {
+      if (data.body.type !== 'MCQ' || data.body.options === undefined) {
+        return true;
+      }
+
+      return (
+        data.body.options.length >= 2 &&
+        data.body.options.some((option) => option.isCorrect)
+      );
+    },
+    {
+      message: 'MCQ must have at least 2 options and one correct option',
+      path: ['body', 'options'],
+    }
+  );
+
+const deleteQuestionSchema = z.object({
+  params: z.object({
+    assessmentId: z.string().uuid('Invalid assessment ID'),
+    questionId: z.string().uuid('Invalid question ID'),
+  }),
+
+  query: z.object({}),
+});
+
 export const AssessmentValidation = {
   createAssessmentSchema,
   updateAssessmentSchema,
   getAssessmentsSchema,
   getAssessmentByIdSchema,
   deleteAssessmentSchema,
+  createQuestionSchema,
+  getQuestionsSchema,
+  getQuestionByIdSchema,
+  updateQuestionSchema,
+  deleteQuestionSchema,
 };
