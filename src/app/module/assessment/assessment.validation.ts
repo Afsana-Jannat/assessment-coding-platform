@@ -1,63 +1,69 @@
 import { z } from 'zod';
 
-const createAssessmentSchema = z
-  .object({
-    title: z
-      .string()
-      .trim()
-      .min(2, 'Title must be at least 2 characters long')
-      .max(200, 'Title must not exceed 200 characters'),
+const createAssessmentSchema = z.object({
+  body: z
+    .object({
+      title: z
+        .string()
+        .trim()
+        .min(2, 'Title must be at least 2 characters long')
+        .max(200, 'Title must not exceed 200 characters'),
 
-    description: z
-      .string()
-      .trim()
-      .max(5000, 'Description must not exceed 5000 characters')
-      .nullable()
-      .optional(),
+      description: z
+        .string()
+        .trim()
+        .max(5000, 'Description must not exceed 5000 characters')
+        .nullable()
+        .optional(),
 
-    instructions: z
-      .string()
-      .trim()
-      .max(5000, 'Instructions must not exceed 5000 characters')
-      .nullable()
-      .optional(),
+      instructions: z
+        .string()
+        .trim()
+        .max(5000, 'Instructions must not exceed 5000 characters')
+        .nullable()
+        .optional(),
 
-    durationMinutes: z
-      .number()
-      .int('Duration must be a whole number')
-      .positive('Duration must be greater than 0'),
+      durationMinutes: z
+        .number()
+        .int('Duration must be a whole number')
+        .positive('Duration must be greater than 0'),
 
-    totalMarks: z
-      .number()
-      .int('Total marks must be a whole number')
-      .positive('Total marks must be greater than 0'),
+      totalMarks: z
+        .number()
+        .int('Total marks must be a whole number')
+        .positive('Total marks must be greater than 0'),
 
-    passingMarks: z
-      .number()
-      .int('Passing marks must be a whole number')
-      .positive('Passing marks must be greater than 0'),
+      passingMarks: z
+        .number()
+        .int('Passing marks must be a whole number')
+        .positive('Passing marks must be greater than 0'),
 
-    startAt: z.coerce.date().nullable().optional(),
+      startAt: z.coerce.date().nullable().optional(),
 
-    endAt: z.coerce.date().nullable().optional(),
-  })
-  .refine((data) => data.passingMarks <= data.totalMarks, {
-    message: 'Passing marks cannot exceed total marks',
-    path: ['passingMarks'],
-  })
-  .refine(
-    (data) => {
-      if (!data.startAt || !data.endAt) {
-        return true;
+      endAt: z.coerce.date().nullable().optional(),
+    })
+    .refine((data) => data.passingMarks <= data.totalMarks, {
+      message: 'Passing marks cannot exceed total marks',
+      path: ['passingMarks'],
+    })
+    .refine(
+      (data) => {
+        if (!data.startAt || !data.endAt) {
+          return true;
+        }
+
+        return data.endAt > data.startAt;
+      },
+      {
+        message: 'End time must be later than start time',
+        path: ['endAt'],
       }
+    ),
 
-      return data.endAt > data.startAt;
-    },
-    {
-      message: 'End time must be later than start time',
-      path: ['endAt'],
-    }
-  );
+  query: z.object({}),
+
+  params: z.object({}),
+});
 
 const updateAssessmentSchema = z
   .object({

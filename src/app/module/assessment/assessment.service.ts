@@ -1,9 +1,8 @@
 import httpStatus from 'http-status';
-
 import { prisma } from '../../lib/prisma';
 
 type CreateAssessmentInput = {
-  recruiterId: string;
+  recruiterUserId: string;
   data: {
     title: string;
     description?: string | null;
@@ -17,12 +16,12 @@ type CreateAssessmentInput = {
 };
 
 const createAssessment = async ({
-  recruiterId,
+  recruiterUserId,
   data,
 }: CreateAssessmentInput) => {
   const recruiter = await prisma.recruiter.findUnique({
     where: {
-      id: recruiterId,
+      userId: recruiterUserId,
     },
     select: {
       id: true,
@@ -32,41 +31,25 @@ const createAssessment = async ({
 
   if (!recruiter) {
     const error = new Error('Recruiter not found');
-
-    Object.assign(error, {
-      statusCode: httpStatus.NOT_FOUND,
-    });
-
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
     throw error;
   }
 
   if (recruiter.isDeleted) {
     const error = new Error('Recruiter has been deleted');
-
-    Object.assign(error, {
-      statusCode: httpStatus.NOT_FOUND,
-    });
-
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
     throw error;
   }
 
   if (data.passingMarks > data.totalMarks) {
     const error = new Error('Passing marks cannot exceed total marks');
-
-    Object.assign(error, {
-      statusCode: httpStatus.BAD_REQUEST,
-    });
-
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
     throw error;
   }
 
   if (data.startAt && data.endAt && data.endAt <= data.startAt) {
     const error = new Error('End time must be later than start time');
-
-    Object.assign(error, {
-      statusCode: httpStatus.BAD_REQUEST,
-    });
-
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
     throw error;
   }
 
@@ -80,7 +63,7 @@ const createAssessment = async ({
       passingMarks: data.passingMarks,
       startAt: data.startAt,
       endAt: data.endAt,
-      recruiterId,
+      recruiterId: recruiter.id,
     },
     select: {
       id: true,
@@ -103,6 +86,4 @@ const createAssessment = async ({
   return assessment;
 };
 
-export const AssessmentService = {
-  createAssessment,
-};
+export const AssessmentService = { createAssessment };

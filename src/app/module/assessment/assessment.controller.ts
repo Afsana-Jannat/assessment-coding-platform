@@ -21,7 +21,7 @@ const createAssessment = catchAsync(async (req: Request, res: Response) => {
   };
 
   const assessment = await AssessmentService.createAssessment({
-    recruiterId: req.user.userId,
+    recruiterUserId: req.user.userId,
     data,
   });
 
