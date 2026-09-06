@@ -13,4 +13,16 @@ router.post(
   AttemptController.startAttempt
 );
 
+router.get(
+  '/:attemptId',
+  auth(Role.CANDIDATE),
+  AttemptController.getAttemptById
+);
+
+router.post(
+  '/:attemptId/submit',
+  auth(Role.CANDIDATE),
+  AttemptController.submitAttempt
+);
+
 export const AttemptRoutes = router;

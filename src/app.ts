@@ -17,6 +17,7 @@ import { RecruiterRoutes } from './app/module/recruiter/recruiter.route';
 import { AssessmentRoutes } from './app/module/assessment/assessment.route';
 import { InvitationRoutes } from './app/module/invitation/invitation.route';
 import { AttemptRoutes } from './app/module/attempt/attempt.route';
+import { AnswerRoutes } from './app/module/answer/answer.route';
 
 const app: Application = express();
 
@@ -43,6 +44,7 @@ app.use('/api/v1/admin', AdminRoutes);
 app.use('/api/v1/assessments', AssessmentRoutes);
 app.use('/api/v1/invitations', InvitationRoutes);
 app.use('/api/v1/attempts', AttemptRoutes);
+app.use('/api/v1/answers', AnswerRoutes);
 
 // Basic route
 app.get('/', async (req: Request, res: Response) => {

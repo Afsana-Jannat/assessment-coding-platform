@@ -253,7 +253,203 @@ const getAttemptById = async (attemptId: string, candidateUserId: string) => {
   };
 };
 
+const submitAttempt = async (attemptId: string, candidateUserId: string) => {
+  // 1. Find candidate
+  const candidate = await prisma.candidate.findUnique({
+    where: {
+      userId: candidateUserId,
+    },
+    select: {
+      id: true,
+      isDeleted: true,
+    },
+  });
+
+  if (!candidate) {
+    const error = new Error('Candidate not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (candidate.isDeleted) {
+    const error = new Error('Candidate has been deleted');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  // 2. Find attempt belonging to candidate
+  const attempt = await prisma.attempt.findFirst({
+    where: {
+      id: attemptId,
+      candidateId: candidate.id,
+    },
+    select: {
+      id: true,
+      startedAt: true,
+      submittedAt: true,
+      status: true,
+      score: true,
+      percentage: true,
+      candidateId: true,
+      assessmentId: true,
+      assessment: {
+        select: {
+          id: true,
+          title: true,
+          durationMinutes: true,
+          totalMarks: true,
+          passingMarks: true,
+        },
+      },
+      answers: {
+        select: {
+          id: true,
+          questionId: true,
+          answerText: true,
+          selectedOptionId: true,
+          isCorrect: true,
+          marksObtained: true,
+          question: {
+            select: {
+              id: true,
+              type: true,
+              marks: true,
+            },
+          },
+          selectedOption: {
+            select: {
+              id: true,
+              isCorrect: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!attempt) {
+    const error = new Error('Attempt not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  // 3. Attempt must be in progress
+  if (attempt.status !== 'IN_PROGRESS') {
+    const error = new Error(
+      'This attempt has already been submitted or expired'
+    );
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
+  const now = new Date();
+
+  // 4. Calculate server-side expiry
+  const expiresAt = new Date(
+    attempt.startedAt.getTime() + attempt.assessment.durationMinutes * 60 * 1000
+  );
+
+  // 5. Check whether time has expired
+  if (now > expiresAt) {
+    const expiredAttempt = await prisma.attempt.update({
+      where: {
+        id: attempt.id,
+      },
+      data: {
+        status: 'TIME_EXPIRED',
+      },
+      select: {
+        id: true,
+        startedAt: true,
+        submittedAt: true,
+        status: true,
+        score: true,
+        percentage: true,
+        candidateId: true,
+        assessmentId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      ...expiredAttempt,
+      expiresAt,
+    };
+  }
+
+  // 6. Evaluate MCQ answers
+  let score = 0;
+
+  const answerUpdates = attempt.answers.map((answer) => {
+    if (answer.question.type !== 'MCQ') {
+      return null;
+    }
+
+    const isCorrect = answer.selectedOption?.isCorrect === true;
+
+    const marksObtained = isCorrect ? answer.question.marks : 0;
+
+    score += marksObtained;
+
+    return prisma.answer.update({
+      where: {
+        id: answer.id,
+      },
+      data: {
+        isCorrect,
+        marksObtained,
+      },
+    });
+  });
+
+  // 7. Save answer evaluation
+  await prisma.$transaction(
+    answerUpdates.filter(
+      (update): update is ReturnType<typeof prisma.answer.update> =>
+        update !== null
+    )
+  );
+
+  // 8. Calculate percentage
+  const percentage =
+    attempt.assessment.totalMarks > 0
+      ? (score / attempt.assessment.totalMarks) * 100
+      : 0;
+
+  // 9. Submit attempt
+  const submittedAttempt = await prisma.attempt.update({
+    where: {
+      id: attempt.id,
+    },
+    data: {
+      status: 'SUBMITTED',
+      submittedAt: now,
+      score,
+      percentage,
+    },
+    select: {
+      id: true,
+      startedAt: true,
+      submittedAt: true,
+      status: true,
+      score: true,
+      percentage: true,
+      candidateId: true,
+      assessmentId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    ...submittedAttempt,
+    expiresAt,
+  };
+};
+
 export const AttemptService = {
   startAttempt,
   getAttemptById,
+  submitAttempt,
 };

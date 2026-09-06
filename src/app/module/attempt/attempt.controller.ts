@@ -1,10 +1,14 @@
 import httpStatus from 'http-status';
-import type { Request } from 'express';
+
+import type { Request, Response } from 'express';
 
 import { AttemptService } from './attempt.service';
+
+import { sendResponse } from '../../utils/sendResponse';
+
 import { catchAsync } from '../../utils/catchAsync';
 
-const startAttempt = catchAsync(async (req: Request, res) => {
+const startAttempt = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {
     throw new Error('Authentication required');
   }
@@ -27,6 +31,53 @@ const startAttempt = catchAsync(async (req: Request, res) => {
   });
 });
 
+const getAttemptById = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const attemptId = req.params.attemptId as string;
+
+  if (!attemptId) {
+    throw new Error('Attempt ID is required');
+  }
+
+  const result = await AttemptService.getAttemptById(
+    attemptId,
+    req.user.userId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Attempt retrieved successfully',
+    data: result,
+  });
+});
+
+const submitAttempt = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const attemptId = req.params.attemptId as string;
+
+  if (!attemptId) {
+    throw new Error('Attempt ID is required');
+  }
+
+  const result = await AttemptService.submitAttempt(attemptId, req.user.userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Assessment attempt submitted successfully',
+    data: result,
+  });
+});
+
 export const AttemptController = {
   startAttempt,
+  getAttemptById,
+  submitAttempt,
 };

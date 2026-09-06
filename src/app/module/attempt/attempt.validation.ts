@@ -8,4 +8,12 @@ const startAttemptSchema = z.object({
   }),
 });
 
-export { startAttemptSchema };
+const submitAttemptSchema = z.object({
+  body: z.object({}),
+  query: z.object({}),
+  params: z.object({
+    attemptId: z.string().uuid('Invalid attempt ID'),
+  }),
+});
+
+export { startAttemptSchema, submitAttemptSchema };
