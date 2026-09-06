@@ -18,6 +18,7 @@ import { AssessmentRoutes } from './app/module/assessment/assessment.route';
 import { InvitationRoutes } from './app/module/invitation/invitation.route';
 import { AttemptRoutes } from './app/module/attempt/attempt.route';
 import { AnswerRoutes } from './app/module/answer/answer.route';
+import { EvaluationRoutes } from './app/module/evaluation/evaluation.routes';
 
 const app: Application = express();
 
@@ -30,10 +31,8 @@ app.use(
   })
 );
 
-// Enable URL-encoded form data parsing
 app.use(express.urlencoded({ extended: true }));
 
-// Middleware to parse JSON bodies
 app.use(express.json());
 app.use(cookieParser());
 
@@ -45,8 +44,8 @@ app.use('/api/v1/assessments', AssessmentRoutes);
 app.use('/api/v1/invitations', InvitationRoutes);
 app.use('/api/v1/attempts', AttemptRoutes);
 app.use('/api/v1/answers', AnswerRoutes);
+app.use('/api/v1/evaluations', EvaluationRoutes);
 
-// Basic route
 app.get('/', async (req: Request, res: Response) => {
   res.status(httpStatus.OK).json({
     success: true,
