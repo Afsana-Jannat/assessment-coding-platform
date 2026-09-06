@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+
 import { prisma } from '../../lib/prisma';
 
 type StartAttemptInput = {
@@ -6,6 +7,9 @@ type StartAttemptInput = {
   assessmentId: string;
 };
 
+/**
+ * Start a new assessment attempt
+ */
 const startAttempt = async ({
   candidateUserId,
   assessmentId,
@@ -33,7 +37,7 @@ const startAttempt = async ({
     throw error;
   }
 
-  // 2. Find published assessment
+  // 2. Find assessment
   const assessment = await prisma.assessment.findFirst({
     where: {
       id: assessmentId,
@@ -181,6 +185,9 @@ const startAttempt = async ({
   };
 };
 
+/**
+ * Get a candidate's own attempt
+ */
 const getAttemptById = async (attemptId: string, candidateUserId: string) => {
   // 1. Find candidate
   const candidate = await prisma.candidate.findUnique({
@@ -205,7 +212,7 @@ const getAttemptById = async (attemptId: string, candidateUserId: string) => {
     throw error;
   }
 
-  // 2. Find attempt belonging to this candidate
+  // 2. Find attempt belonging to candidate
   const attempt = await prisma.attempt.findFirst({
     where: {
       id: attemptId,
@@ -253,6 +260,9 @@ const getAttemptById = async (attemptId: string, candidateUserId: string) => {
   };
 };
 
+/**
+ * Submit an assessment attempt
+ */
 const submitAttempt = async (attemptId: string, candidateUserId: string) => {
   // 1. Find candidate
   const candidate = await prisma.candidate.findUnique({
@@ -414,7 +424,7 @@ const submitAttempt = async (attemptId: string, candidateUserId: string) => {
   // 8. Calculate percentage
   const percentage =
     attempt.assessment.totalMarks > 0
-      ? (score / attempt.assessment.totalMarks) * 100
+      ? Number(((score / attempt.assessment.totalMarks) * 100).toFixed(2))
       : 0;
 
   // 9. Submit attempt
