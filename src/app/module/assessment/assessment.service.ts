@@ -1173,6 +1173,26 @@ const publishAssessment = async ({
     throw error;
   }
 
+  const questionMarks = await prisma.question.aggregate({
+    where: {
+      assessmentId: assessment.id,
+      isDeleted: false,
+    },
+    _sum: {
+      marks: true,
+    },
+  });
+
+  const totalQuestionMarks = questionMarks._sum.marks ?? 0;
+
+  if (totalQuestionMarks !== assessment.totalMarks) {
+    const error = new Error(
+      `Total question marks (${totalQuestionMarks}) must equal assessment total marks (${assessment.totalMarks})`
+    );
+    Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });
+    throw error;
+  }
+
   if (assessment.passingMarks > assessment.totalMarks) {
     const error = new Error('Passing marks cannot exceed total marks');
     Object.assign(error, { statusCode: httpStatus.BAD_REQUEST });

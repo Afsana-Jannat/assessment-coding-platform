@@ -45,6 +45,13 @@ router.delete(
   AssessmentController.deleteAssessment
 );
 
+router.patch(
+  '/:assessmentId/publish',
+  auth(Role.RECRUITER),
+  validateRequest(AssessmentValidation.publishAssessmentSchema),
+  AssessmentController.publishAssessment
+);
+
 router.post(
   '/:assessmentId/questions',
   auth(Role.RECRUITER),

@@ -179,7 +179,7 @@ const publishAssessmentSchema = z.object({
 
   query: z.object({}),
 
-  body: z.object({}),
+  body: z.object({}).optional(),
 });
 
 const createQuestionSchema = z
