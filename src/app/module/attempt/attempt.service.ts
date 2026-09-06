@@ -181,6 +181,79 @@ const startAttempt = async ({
   };
 };
 
+const getAttemptById = async (attemptId: string, candidateUserId: string) => {
+  // 1. Find candidate
+  const candidate = await prisma.candidate.findUnique({
+    where: {
+      userId: candidateUserId,
+    },
+    select: {
+      id: true,
+      isDeleted: true,
+    },
+  });
+
+  if (!candidate) {
+    const error = new Error('Candidate not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  if (candidate.isDeleted) {
+    const error = new Error('Candidate has been deleted');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  // 2. Find attempt belonging to this candidate
+  const attempt = await prisma.attempt.findFirst({
+    where: {
+      id: attemptId,
+      candidateId: candidate.id,
+    },
+    select: {
+      id: true,
+      startedAt: true,
+      submittedAt: true,
+      status: true,
+      score: true,
+      percentage: true,
+      candidateId: true,
+      assessmentId: true,
+      createdAt: true,
+      updatedAt: true,
+      assessment: {
+        select: {
+          id: true,
+          title: true,
+          durationMinutes: true,
+          totalMarks: true,
+          passingMarks: true,
+          startAt: true,
+          endAt: true,
+        },
+      },
+    },
+  });
+
+  if (!attempt) {
+    const error = new Error('Attempt not found');
+    Object.assign(error, { statusCode: httpStatus.NOT_FOUND });
+    throw error;
+  }
+
+  // 3. Calculate server-side expiry time
+  const expiresAt = new Date(
+    attempt.startedAt.getTime() + attempt.assessment.durationMinutes * 60 * 1000
+  );
+
+  return {
+    ...attempt,
+    expiresAt,
+  };
+};
+
 export const AttemptService = {
   startAttempt,
+  getAttemptById,
 };
