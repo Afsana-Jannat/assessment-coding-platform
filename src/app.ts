@@ -19,6 +19,7 @@ import { InvitationRoutes } from './app/module/invitation/invitation.route';
 import { AttemptRoutes } from './app/module/attempt/attempt.route';
 import { AnswerRoutes } from './app/module/answer/answer.route';
 import { EvaluationRoutes } from './app/module/evaluation/evaluation.routes';
+import { PaymentRoutes } from './app/module/payment/payment.route';
 
 const app: Application = express();
 
@@ -33,7 +34,20 @@ app.use(
 
 app.use(express.urlencoded({ extended: true }));
 
+/*
+ * Stripe Webhook
+ *
+ * IMPORTANT:
+ * This route must receive the raw request body
+ * before express.json() parses it.
+ */
+app.use(
+  '/api/v1/payments/stripe/webhook',
+  express.raw({ type: 'application/json' })
+);
+
 app.use(express.json());
+
 app.use(cookieParser());
 
 app.use('/api/v1/auth', AuthRoutes);
@@ -45,6 +59,7 @@ app.use('/api/v1/invitations', InvitationRoutes);
 app.use('/api/v1/attempts', AttemptRoutes);
 app.use('/api/v1/answers', AnswerRoutes);
 app.use('/api/v1/evaluations', EvaluationRoutes);
+app.use('/api/v1/payments', PaymentRoutes);
 
 app.get('/', async (req: Request, res: Response) => {
   res.status(httpStatus.OK).json({
@@ -54,6 +69,7 @@ app.get('/', async (req: Request, res: Response) => {
 });
 
 app.use(globalErrorHandler);
+
 app.use(notFound);
 
 export default app;
