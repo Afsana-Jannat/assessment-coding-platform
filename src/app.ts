@@ -20,6 +20,8 @@ import { AttemptRoutes } from './app/module/attempt/attempt.route';
 import { AnswerRoutes } from './app/module/answer/answer.route';
 import { EvaluationRoutes } from './app/module/evaluation/evaluation.routes';
 import { PaymentRoutes } from './app/module/payment/payment.route';
+import { ReportsRoutes } from './app/module/reports/reports.route';
+import { AuditLogRoutes } from './app/module/auditLog/auditLog.route';
 
 const app: Application = express();
 
@@ -27,20 +29,12 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: config.frontend_url,
+    origin: true,
     credentials: true,
   })
 );
-
 app.use(express.urlencoded({ extended: true }));
 
-/*
- * Stripe Webhook
- *
- * IMPORTANT:
- * This route must receive the raw request body
- * before express.json() parses it.
- */
 app.use(
   '/api/v1/payments/stripe/webhook',
   express.raw({ type: 'application/json' })
@@ -60,6 +54,8 @@ app.use('/api/v1/attempts', AttemptRoutes);
 app.use('/api/v1/answers', AnswerRoutes);
 app.use('/api/v1/evaluations', EvaluationRoutes);
 app.use('/api/v1/payments', PaymentRoutes);
+app.use('/api/v1/reports', ReportsRoutes);
+app.use('/api/v1/audit-logs', AuditLogRoutes);
 
 app.get('/', async (req: Request, res: Response) => {
   res.status(httpStatus.OK).json({

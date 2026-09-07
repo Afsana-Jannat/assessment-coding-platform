@@ -17,6 +17,27 @@ router.post(
   PaymentController.createStripePayment
 );
 
+router.post(
+  '/bkash/create',
+  auth(Role.RECRUITER),
+  validateRequest(PaymentValidation.createStripePaymentSchema),
+  PaymentController.createBkashPayment
+);
+
+router.post(
+  '/bkash/execute',
+  auth(Role.RECRUITER),
+  PaymentController.executeBkashPayment
+);
+
+router.get('/bkash/callback', PaymentController.bkashCallback);
+
+router.get(
+  '/bkash/query/:paymentID',
+  auth(Role.RECRUITER),
+  PaymentController.queryBkashPayment
+);
+
 router.post('/stripe/webhook', PaymentController.stripeWebhook);
 
 export const PaymentRoutes = router;

@@ -25,8 +25,9 @@ const createStripePayment = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// Stripe Webhook
-
+/**
+ * Stripe Webhook
+ */
 const stripeWebhook = catchAsync(async (req: Request, res: Response) => {
   const signature = req.headers['stripe-signature'];
 
@@ -48,7 +49,93 @@ const stripeWebhook = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+/**
+ * Create bKash Payment
+ */
+const createBkashPayment = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new Error('Authentication required');
+  }
+
+  const { assessmentId } = req.body;
+
+  const payment = await PaymentService.createBkashPayment({
+    recruiterUserId: req.user.userId,
+    assessmentId,
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'bKash payment created successfully',
+    data: payment,
+  });
+});
+
+/**
+ * Execute bKash Payment
+ */
+const executeBkashPayment = catchAsync(async (req: Request, res: Response) => {
+  const { paymentID } = req.body;
+
+  if (!paymentID) {
+    throw new Error('bKash paymentID is required');
+  }
+
+  const payment = await PaymentService.executeBkashPayment(paymentID);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'bKash payment executed successfully',
+    data: payment,
+  });
+});
+
+// bKash Callback
+const bkashCallback = catchAsync(async (req: Request, res: Response) => {
+  const { paymentID, status } = req.query;
+
+  if (!paymentID || typeof paymentID !== 'string') {
+    throw new Error('bKash paymentID is required');
+  }
+
+  if (!status || typeof status !== 'string') {
+    throw new Error('bKash payment status is required');
+  }
+
+  const result = await PaymentService.handleBkashCallback(paymentID, status);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'bKash callback processed successfully',
+    data: result,
+  });
+});
+
+const queryBkashPayment = catchAsync(async (req: Request, res: Response) => {
+  const { paymentID } = req.params;
+
+  if (!paymentID || Array.isArray(paymentID)) {
+    throw new Error('Valid bKash paymentID is required');
+  }
+
+  const result = await PaymentService.queryBkashPayment(paymentID);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'bKash payment status retrieved successfully',
+    data: result,
+  });
+});
+
 export const PaymentController = {
   createStripePayment,
   stripeWebhook,
+  createBkashPayment,
+  executeBkashPayment,
+  bkashCallback,
+  queryBkashPayment,
 };
